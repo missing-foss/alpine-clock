@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "alpine-clock",
+  "name": "Alpine Clock",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "minAndroidSdk": 24,
+  "entryClass": "org.missing_foss.alpineclock.AlpineClockPlugin",
+  "description": "A station-style clock screensaver: the second hand sweeps the dial in 58.5 seconds and waits at twelve, then the minute hand steps on. With an optional Alpine ridge across the face.",
+  "author": "missing-foss",
+  "license": "Apache-2.0",
+  "capabilities": [
+    "screensaver"
+  ],
+  "icon": "icon.png",
+  "settings": [
+    {
+      "key": "face",
+      "type": "select",
+      "title": "Face",
+      "default": "Night",
+      "options": [
+        "Night",
+        "Day"
+      ],
+      "group": "Clock",
+      "description": "A dark face or a light one. The page around it is black either way."
+    },
+    {
+      "key": "mountains",
+      "type": "boolean",
+      "title": "Mountains",
+      "default": true,
+      "group": "Clock",
+      "description": "An Alpine ridge across the lower half of the face."
+    },
+    {
+      "key": "numbers",
+      "type": "select",
+      "title": "Numbers",
+      "default": "None",
+      "options": [
+        "None",
+        "12 · 3 · 6 · 9",
+        "All hours"
+      ],
+      "group": "Clock",
+      "description": "Hour numbers in place of the hour marks. The minute dots stay."
+    },
+    {
+      "key": "customHands",
+      "type": "boolean",
+      "title": "Custom hand colours",
+      "default": false,
+      "group": "Clock",
+      "description": "Off, the hands follow the face."
+    },
+    {
+      "key": "hourColor",
+      "type": "color",
+      "title": "Hour hand",
+      "default": "#E9ECE8",
+      "group": "Clock",
+      "visibleWhen": {
+        "key": "customHands",
+        "equals": true
+      }
+    },
+    {
+      "key": "minuteColor",
+      "type": "color",
+      "title": "Minute hand",
+      "default": "#E9ECE8",
+      "group": "Clock",
+      "visibleWhen": {
+        "key": "customHands",
+        "equals": true
+      }
+    },
+    {
+      "key": "secondColor",
+      "type": "color",
+      "title": "Second hand",
+      "default": "#E8953F",
+      "group": "Clock",
+      "visibleWhen": {
+        "key": "customHands",
+        "equals": true
+      }
+    },
+    {
+      "key": "size",
+      "type": "number",
+      "title": "Size",
+      "default": 85,
+      "min": 40,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "group": "Clock",
+      "description": "How much of the screen's shorter side the clock fills."
+    },
+    {
+      "key": "drift",
+      "type": "boolean",
+      "title": "Slow drift",
+      "default": true,
+      "group": "Clock",
+      "description": "Moves the clock a little each minute, round a small circle once an hour."
+    }
+  ],
+  "groups": [
+    {
+      "title": "Clock"
+    }
+  ]
+}
