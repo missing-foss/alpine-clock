@@ -23,7 +23,7 @@ All at 10:08, with Slow drift off; every other setting at its default. Regenerat
 
 ## Requirements
 
-Android 7.0 or newer, on any device where Kiosk Satellite can show a screensaver. (An Echo Dot running Kiosk Satellite has no screen, so no screensaver.)
+Android 7.0 or newer, on any device where Kiosk Satellite can show a screensaver. (An Echo Dot running Kiosk Satellite has no screen, so no screensaver.) Kiosk Satellite 2026.10.23 or newer.
 
 ## Settings
 
@@ -38,6 +38,30 @@ Under **Plugin Manager → Alpine Clock**:
 
 Choose **Alpine Clock** under **Screensaver → Screensaver mode**. The clock follows the tablet's time and stores nothing. The face is drawn once; between minutes only the second hand moves, as a CSS animation. The numbers use the system font, so no font is shipped.
 
+## Installation
+
+### Community Plugins (Recommended)
+
+Alpine Clock is listed in [Community Plugins](https://kiosksatellite.com/plugins/). Use the button below to open it in your Kiosk Satellite and install it.
+
+[![Install in Kiosk Satellite](https://kiosksatellite.com/img/badges/plugin-add.svg)](https://kiosksatellite.com/redirect/plugin/?repository=missing-foss/alpine-clock)
+
+Or search for `Alpine Clock` in **Settings > Plugin Manager > Browse plugins** in Kiosk Satellite.
+
+### Manual
+
+1. Open **Settings > Plugin Manager** in Kiosk Satellite and turn on **Enable Plugins**.
+2. Choose **Add plugin**, paste `https://github.com/missing-foss/alpine-clock` and choose **Preview**.
+3. Review the plugin and choose **Trust and install**.
+
+### From a ZIP
+
+For testing, build the ZIP (below) and use **Plugin Manager → Developer Tools → Install from ZIP**. Each CI run also keeps the package as its `alpine-clock-plugin` artifact; the downloaded file installs as it is, without unzipping.
+
+## Data
+
+Alpine Clock sends no data anywhere: it reads only its own files and makes no network request.
+
 ## Develop
 
 You need Python 3, JDK 17 or newer, Node.js 18 or newer, and an Android SDK with a platform and build-tools (`ANDROID_HOME` set).
@@ -46,8 +70,6 @@ You need Python 3, JDK 17 or newer, Node.js 18 or newer, and an Android SDK with
 python3 tools/test.py                            # every test
 python3 tools/build.py --android-platform 35     # dist/alpine-clock-<version>.zip
 ```
-
-To try a build on a device, use **Plugin Manager → Developer Tools → Install from ZIP** with the ZIP, or with the `alpine-clock-plugin` artifact of any CI run: the downloaded file installs as it is, without unzipping.
 
 `tools/test.py` runs:
 
