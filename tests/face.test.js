@@ -50,3 +50,22 @@ test('three hands, the second hand a needle without a disc at its tip', () => {
   assert.deepStrictEqual(circles, [Face.GEOMETRY.hub, Face.GEOMETRY.hubHole], 'only the hub, at the centre');
   assert.ok(!/<circle[^>]*cy=/.test(second), 'no disc away from the centre');
 });
+
+test('a crafted fragment reaches the markup as nothing: bad colours and faces fall back to the face\'s own', () => {
+  const hostile = '#123456" onload="alert(1)';
+  const options = {
+    face: 'Day', hourColor: hostile, minuteColor: '"><script>alert(1)</script>', secondColor: '<svg/onload=alert(1)>',
+    numbers: '<b>', mountains: '<b>'
+  };
+  // A payload in front of a valid colour: only an anchored pattern stops it.
+  const tailed = { face: 'Day', hourColor: 'x" onload="alert(1)" a="#123456' };
+  const svg = Face.svg(options);
+  assert.strictEqual(svg, Face.svg({ face: 'Day' }), 'the same face as with no colours chosen');
+  assert.strictEqual(Face.svg(tailed), Face.svg({ face: 'Day' }), 'a colour only at the end is no colour');
+  for (const s of ['alert', 'script', 'onload', '<b>']) assert.ok(!svg.includes(s), s);
+  assert.deepStrictEqual(Face.handColours({ hourColor: '#12345', minuteColor: '#1234567', secondColor: 'red' }),
+    Face.handColours({}), 'only #RRGGBB counts');
+  for (const face of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    assert.strictEqual(Face.svg({ face }), Face.svg({ face: 'Night' }), `${face}: Night`);
+  }
+});

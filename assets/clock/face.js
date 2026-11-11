@@ -100,19 +100,30 @@
       ' L ' + h.base / 2 + ' ' + h.tail + ' A ' + h.base / 2 + ' ' + h.base / 2 + ' 0 0 1 ' + -h.base / 2 + ' ' + h.tail + ' Z';
   }
 
+  // The face by name, Night unless the name is one of the table's own.
+  function faceOf(options) {
+    return Object.prototype.hasOwnProperty.call(FACES, options.face) ? FACES[options.face] : FACES.Night;
+  }
+
+  // A chosen colour goes into the markup only as #RRGGBB, the form the
+  // plugin passes; anything else is no choice.
+  function colour(value, fallback) {
+    return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+  }
+
   // The hands' colours: the face's own, or the three chosen ones.
   function handColours(options) {
-    var f = FACES[options.face] || FACES.Night;
+    var f = faceOf(options);
     return {
-      hour: options.hourColor || f.ink,
-      minute: options.minuteColor || f.ink,
-      second: options.secondColor || f.signal
+      hour: colour(options.hourColor, f.ink),
+      minute: colour(options.minuteColor, f.ink),
+      second: colour(options.secondColor, f.signal)
     };
   }
 
   // The whole clock: the face, then the three hands as groups the page turns.
   function svg(options) {
-    var f = FACES[options.face] || FACES.Night;
+    var f = faceOf(options);
     var g = GEOMETRY, c = handColours(options);
     var numbered = numberedHours(options.numbers);
     var s = g.second;
