@@ -12,7 +12,8 @@
   style.setProperty('--size', String(size));
 
   var clock = document.getElementById('clock');
-  clock.innerHTML = Face.svg(options);
+  // Drawn with DOM calls from the face's tree: no setting ever becomes markup.
+  clock.appendChild(Face.draw(document, options));
   var second = clock.querySelector('.hand.second');
   var minute = clock.querySelector('.hand.minute');
   var hour = clock.querySelector('.hand.hour');

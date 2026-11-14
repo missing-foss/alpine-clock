@@ -69,3 +69,32 @@ test('a crafted fragment reaches the markup as nothing: bad colours and faces fa
     assert.strictEqual(Face.svg({ face }), Face.svg({ face: 'Night' }), `${face}: Night`);
   }
 });
+
+// A document that records what the page's DOM calls build, and prints it
+// back as markup, so the drawn face can be compared with the tree's text.
+function fakeDocument() {
+  const namespaces = new Set();
+  const print = (node) => node.text !== undefined ? node.text
+    : '<' + node.tag + node.attrs.map(([k, v]) => ` ${k}="${v}"`).join('') +
+      (node.children.length ? '>' + node.children.map(print).join('') + '</' + node.tag + '>' : '/>');
+  return {
+    namespaces, print,
+    createElementNS(ns, tag) {
+      namespaces.add(ns);
+      return { tag, attrs: [], children: [], setAttribute(k, v) { this.attrs.push([k, v]); }, appendChild(c) { this.children.push(c); } };
+    },
+    createTextNode(text) { return { text }; }
+  };
+}
+
+test('the page draws the face with DOM calls, element by element, as the tree says', () => {
+  for (const options of [{ face: 'Day', numbers: 'all' }, { face: 'Night', numbers: 'quarters', mountains: false },
+    { hourColor: '#ff0000', secondColor: '"><script>alert(1)</script>' }]) {
+    const doc = fakeDocument();
+    const drawn = doc.print(Face.draw(doc, options));
+    // The root's xmlns comes from createElementNS, not from an attribute.
+    assert.strictEqual(drawn, Face.svg(options).replace(' xmlns="http://www.w3.org/2000/svg"', ''), JSON.stringify(options));
+    assert.deepStrictEqual([...doc.namespaces], ['http://www.w3.org/2000/svg'], 'every element in the SVG namespace');
+    assert.ok(!drawn.includes('script'), 'a hostile colour never reaches the drawing');
+  }
+});

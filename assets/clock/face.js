@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-// The face as SVG markup, drawn once per set of settings: bezel, ring, the
-// optional ridge, the marks and numbers, and the hands' shapes. A string, no
-// DOM, so the geometry is tested in Node. Units: the face's radius R is 100,
-// the viewBox runs from -100 to 100, y grows downwards.
+// The face as SVG, drawn once per set of settings: bezel, ring, the optional
+// ridge, the marks and numbers, and the hands' shapes. It is built as a small
+// tree of elements: the page draws that tree with DOM calls, so no setting
+// ever reaches markup, and the tests read the same tree as text in Node.
+// Units: the face's radius R is 100, the viewBox runs from -100 to 100, y
+// grows downwards.
 (function (root) {
   'use strict';
 
@@ -36,6 +38,12 @@
 
   function n(x) { return Math.round(x * 100) / 100; }
 
+  // An element of the tree: its tag, its attributes in order, and its
+  // children (elements, or one text). Every value is a string or a number.
+  function el(tag, attrs, children) {
+    return { tag: tag, attrs: attrs || [], children: children || [] };
+  }
+
   // The hours that show a number instead of a wedge: none, 12, 3, 6 and 9, or all.
   function numberedHours(numbers) {
     if (numbers === 'all') return [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -55,27 +63,29 @@
       var dip = Math.round(x * 40) % 2 === 0 ? 0.018 : -0.006;
       snow += ' L ' + n(x * 100) + ' ' + n((SNOWLINE + dip) * 100);
     }
-    return '<clipPath id="face-clip"><circle r="' + GEOMETRY.ridgeClip + '"/></clipPath>' +
-      '<clipPath id="near-clip"><path d="' + ridge(FRONT) + '"/></clipPath>' +
-      '<g class="mountains" clip-path="url(#face-clip)">' +
-      '<path d="' + ridge(BACK) + '" fill="' + f.far + '"/>' +
-      '<path d="' + ridge(FRONT) + '" fill="' + f.near + '"/>' +
-      '<path d="' + snow + ' Z" fill="' + f.snow + '" clip-path="url(#near-clip)"/>' +
-      '</g>';
+    return [
+      el('clipPath', [['id', 'face-clip']], [el('circle', [['r', GEOMETRY.ridgeClip]])]),
+      el('clipPath', [['id', 'near-clip']], [el('path', [['d', ridge(FRONT)]])]),
+      el('g', [['class', 'mountains'], ['clip-path', 'url(#face-clip)']], [
+        el('path', [['d', ridge(BACK)], ['fill', f.far]]),
+        el('path', [['d', ridge(FRONT)], ['fill', f.near]]),
+        el('path', [['d', snow + ' Z'], ['fill', f.snow], ['clip-path', 'url(#near-clip)']])
+      ])
+    ];
   }
 
   function marks(f, numbered) {
-    var g = GEOMETRY, out = '';
+    var g = GEOMETRY, out = [];
     for (var i = 0; i < 60; i++) {
       var hour = i / 5 === 0 ? 12 : i / 5;
-      var rotate = ' transform="rotate(' + i * 6 + ')"';
+      var rotate = ['transform', 'rotate(' + i * 6 + ')'];
       // Every minute has its dot; an hour without a number has its wedge
       // over it, wide enough to cover it.
-      out += '<circle class="dot"' + rotate + ' cy="' + -g.dot + '" r="' + g.dotRadius + '" fill="' + f.minor + '"/>';
+      out.push(el('circle', [['class', 'dot'], rotate, ['cy', -g.dot], ['r', g.dotRadius], ['fill', f.minor]]));
       if (i % 5 === 0 && numbered.indexOf(hour) < 0) {
-        out += '<path class="wedge"' + rotate + ' fill="' + f.ink + '" d="M ' + -g.wedgeOuterWidth / 2 + ' ' + -g.wedgeOuter +
+        out.push(el('path', [['class', 'wedge'], rotate, ['fill', f.ink], ['d', 'M ' + -g.wedgeOuterWidth / 2 + ' ' + -g.wedgeOuter +
           ' L ' + g.wedgeOuterWidth / 2 + ' ' + -g.wedgeOuter + ' L ' + g.wedgeInnerWidth / 2 + ' ' + -g.wedgeInner +
-          ' L ' + -g.wedgeInnerWidth / 2 + ' ' + -g.wedgeInner + ' Z"/>';
+          ' L ' + -g.wedgeInnerWidth / 2 + ' ' + -g.wedgeInner + ' Z']]));
       }
     }
     return out;
@@ -87,9 +97,9 @@
     var size = quarters ? g.numberSizeQuarters : g.numberSizeAll;
     return numbered.map(function (hour) {
       var a = hour * Math.PI / 6;
-      return '<text class="number" x="' + n(Math.sin(a) * radius) + '" y="' + n(-Math.cos(a) * radius + 0.8) +
-        '" font-size="' + size + '" fill="' + f.ink + '">' + hour + '</text>';
-    }).join('');
+      return el('text', [['class', 'number'], ['x', n(Math.sin(a) * radius)], ['y', n(-Math.cos(a) * radius + 0.8)],
+        ['font-size', size], ['fill', f.ink]], [String(hour)]);
+    });
   }
 
   // A tapered hand pointing at twelve: wide at the hub, narrow at the tip,
@@ -121,30 +131,56 @@
     };
   }
 
-  // The whole clock: the face, then the three hands as groups the page turns.
-  function svg(options) {
+  // The whole clock as a tree: the face, then the three hands as groups the
+  // page turns.
+  function tree(options) {
     var f = faceOf(options);
     var g = GEOMETRY, c = handColours(options);
     var numbered = numberedHours(options.numbers);
     var s = g.second;
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-100 -100 200 200" role="img">' +
-      '<circle r="' + g.bezel + '" fill="' + f.bezel + '"/>' +
-      '<circle r="' + g.face + '" fill="' + f.face + '"/>' +
-      '<circle r="' + g.rim + '" fill="none" stroke="' + f.rim + '" stroke-width="' + g.rimWidth + '"/>' +
-      (options.mountains === false ? '' : mountains(f)) +
-      marks(f, numbered) +
-      numbers(f, numbered, options.numbers === 'quarters') +
-      '<g class="hand hour"><path d="' + taper(g.hour) + '" fill="' + c.hour + '"/></g>' +
-      '<g class="hand minute"><path d="' + taper(g.minute) + '" fill="' + c.minute + '"/></g>' +
-      '<g class="hand second" stroke="' + c.second + '" stroke-linecap="round">' +
-      '<line y1="' + s.tail + '" y2="' + -s.length + '" stroke-width="' + s.width + '"/>' +
-      '<line y1="' + s.weightTo + '" y2="' + s.weightFrom + '" stroke-width="' + s.weightWidth + '"/>' +
-      '<circle r="' + g.hub + '" fill="' + c.second + '" stroke="none"/>' +
-      '<circle r="' + g.hubHole + '" fill="' + f.face + '" stroke="none"/></g>' +
-      '</svg>';
+    return el('svg', [['xmlns', SVG_NS], ['viewBox', '-100 -100 200 200'], ['role', 'img']], [].concat(
+      el('circle', [['r', g.bezel], ['fill', f.bezel]]),
+      el('circle', [['r', g.face], ['fill', f.face]]),
+      el('circle', [['r', g.rim], ['fill', 'none'], ['stroke', f.rim], ['stroke-width', g.rimWidth]]),
+      options.mountains === false ? [] : mountains(f),
+      marks(f, numbered),
+      numbers(f, numbered, options.numbers === 'quarters'),
+      el('g', [['class', 'hand hour']], [el('path', [['d', taper(g.hour)], ['fill', c.hour]])]),
+      el('g', [['class', 'hand minute']], [el('path', [['d', taper(g.minute)], ['fill', c.minute]])]),
+      el('g', [['class', 'hand second'], ['stroke', c.second], ['stroke-linecap', 'round']], [
+        el('line', [['y1', s.tail], ['y2', -s.length], ['stroke-width', s.width]]),
+        el('line', [['y1', s.weightTo], ['y2', s.weightFrom], ['stroke-width', s.weightWidth]]),
+        el('circle', [['r', g.hub], ['fill', c.second], ['stroke', 'none']]),
+        el('circle', [['r', g.hubHole], ['fill', f.face], ['stroke', 'none']])
+      ])
+    ));
   }
 
-  var api = { FACES: FACES, GEOMETRY: GEOMETRY, numberedHours: numberedHours, handColours: handColours, svg: svg };
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  // The tree as markup, for the tests: the same text the page's DOM holds.
+  function markup(node) {
+    if (typeof node === 'string') return node;
+    var open = '<' + node.tag + node.attrs.map(function (a) { return ' ' + a[0] + '="' + a[1] + '"'; }).join('');
+    if (!node.children.length) return open + '/>';
+    return open + '>' + node.children.map(markup).join('') + '</' + node.tag + '>';
+  }
+
+  function svg(options) { return markup(tree(options)); }
+
+  // The tree as DOM nodes, made with createElementNS and setAttribute: what
+  // the page draws. Nothing is parsed from text.
+  function build(doc, node) {
+    if (typeof node === 'string') return doc.createTextNode(node);
+    var e = doc.createElementNS(SVG_NS, node.tag);
+    node.attrs.forEach(function (a) { if (a[0] !== 'xmlns') e.setAttribute(a[0], String(a[1])); });
+    node.children.forEach(function (child) { e.appendChild(build(doc, child)); });
+    return e;
+  }
+
+  function draw(doc, options) { return build(doc, tree(options)); }
+
+  var api = { FACES: FACES, GEOMETRY: GEOMETRY, numberedHours: numberedHours, handColours: handColours, tree: tree, svg: svg, draw: draw };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.Face = api;
 }(this));
